@@ -73,6 +73,46 @@ class QualityInspection(Document):
 		if self.readings:
 			self.inspect_and_set_status()
 
+		# Custom validation based on custom_qi_based_on_each_quantity
+		custom_qi_based_on_each_quantity = frappe.db.get_value('Item', self.item_code, 'custom_qi_based_on_each_quantity')
+		if custom_qi_based_on_each_quantity:
+			self.validate_unique_serial_number()
+			self.validate_batch_number_count()
+
+	def validate_unique_serial_number(self):
+		if self.item_serial_no:
+			frappe.log_error(message=f"Validating serial number: {self.item_serial_no} for reference: {self.reference_name}", title="Quality Inspection Debug")
+
+			existing_qi = frappe.db.sql("""
+				SELECT name FROM `tabQuality Inspection`
+				WHERE item_serial_no = %s AND reference_name = %s AND docstatus != 2
+			""", (self.item_serial_no, self.reference_name))
+
+			frappe.log_error(message=f"Existing QI check result: {existing_qi}", title="Quality Inspection Debug")
+
+			if existing_qi:
+				frappe.throw(_("Serial Number {} is already used in another Quality Inspection for this reference.").format(self.item_serial_no))
+
+	def validate_batch_number_count(self):
+		if self.batch_no:
+			# Get the total quantity from the reference document
+			total_qty = frappe.db.get_value(self.reference_type + " Item", {'parent': self.reference_name, 'item_code': self.item_code}, 'qty')
+			frappe.log_error(message=f"Total quantity for item {self.item_code} in {self.reference_name}: {total_qty}", title="Quality Inspection Debug")
+
+			# Get the current count of Quality Inspections for this batch number and item
+			current_count = frappe.db.count('Quality Inspection', {
+				'batch_no': self.batch_no,
+				'reference_name': self.reference_name,
+				'item_code': self.item_code,
+				'docstatus': ['!=', 2]  # Exclude cancelled documents
+			})
+			frappe.log_error(message=f"Current count of QIs for batch {self.batch_no} in {self.reference_name}: {current_count}", title="Quality Inspection Debug")
+
+			if current_count >= total_qty:
+				frappe.throw(_("Total Quality Inspections for Batch Number {} cannot exceed the total quantity of the item.").format(self.batch_no))
+
+    # The rest of the existing methods remain unchanged...
+
 	def before_submit(self):
 		self.validate_readings_status_mandatory()
 

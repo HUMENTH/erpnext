@@ -73,6 +73,12 @@ frappe.ui.form.on("Quality Inspection", {
 				},
 			});
 		}
+
+        // Custom logic to check custom_qi_based_on_each_quantity
+        frappe.db.get_value('Item', frm.doc.item_code, 'custom_qi_based_on_each_quantity', function(value) {
+            frm.doc.custom_qi_based_on_each_quantity = value.custom_qi_based_on_each_quantity;
+            frm.refresh_field('custom_qi_based_on_each_quantity');
+        });
 	},
 
 	quality_inspection_template: function (frm) {
