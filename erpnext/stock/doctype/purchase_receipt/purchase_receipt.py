@@ -316,7 +316,27 @@ class PurchaseReceipt(BuyingController):
 
 	def validate_items_quality_inspection(self):
 		for item in self.get("items"):
-			if item.quality_inspection:
+			# Check if inspection is required for each unit in the Item Master
+			inspection_required_for_each_unit = frappe.db.get_value(
+				"Item", item.item_code, "inspection_required_for_each_unit"
+			)
+
+			# If inspection is required for each unit, create separate Quality Inspections for each received_qty
+			if inspection_required_for_each_unit and item.received_qty:
+				for i in range(int(item.received_qty)):
+					quality_inspection = frappe.new_doc("Quality Inspection")
+					quality_inspection.item_code = item.item_code
+					quality_inspection.reference_type = "Purchase Receipt"
+					quality_inspection.reference_name = self.name
+					quality_inspection.inspection_type = "Incoming"
+					quality_inspection.sample_size = 1  # Since each unit is inspected separately
+					quality_inspection.flags.ignore_permissions = True
+					quality_inspection.insert()
+
+				# Update item to reflect the multiple inspections created
+				item.quality_inspection = None  # Clear the field as separate inspections are created
+
+			elif item.quality_inspection:
 				qi = frappe.db.get_value(
 					"Quality Inspection",
 					item.quality_inspection,

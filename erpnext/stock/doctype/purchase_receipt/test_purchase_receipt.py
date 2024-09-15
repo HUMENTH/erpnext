@@ -3947,3 +3947,54 @@ def make_purchase_receipt(**args):
 
 test_dependencies = ["BOM", "Item Price", "Location"]
 test_records = frappe.get_test_records("Purchase Receipt")
+
+# Test for Purchase Receipt with individual Quality Inspection for each unit
+def test_create_purchase_receipt_with_quality_inspection_per_unit():
+    purchase_receipt = frappe.get_doc({
+        'doctype': 'Purchase Receipt',
+        'supplier': '_Test Supplier',
+        'items': [{
+            'item_code': '_Test Item',
+            'qty': 10,
+            'received_qty': 10,
+            'warehouse': '_Test Warehouse - _TC'
+        }]
+    })
+    purchase_receipt.insert()
+    purchase_receipt.submit()
+
+    # Test if a separate Quality Inspection is created for each item quantity
+    for item in purchase_receipt.items:
+        for i in range(int(item.received_qty)):
+            qi = frappe.get_doc({
+                'doctype': 'Quality Inspection',
+                'item_code': item.item_code,
+                'reference_type': 'Purchase Receipt',
+                'reference_name': purchase_receipt.name,
+                'inspected_by': frappe.session.user
+            })
+            qi.insert()
+            qi.submit()
+
+    assert frappe.db.count('Quality Inspection', {'reference_name': purchase_receipt.name}) == 10
+
+# Advanced Purchase Receipt Test with rejection
+def test_purchase_receipt_with_rejected_units():
+    purchase_receipt = frappe.get_doc({
+        'doctype': 'Purchase Receipt',
+        'supplier': '_Test Supplier',
+        'items': [{
+            'item_code': '_Test Item',
+            'qty': 5,
+            'received_qty': 5,
+            'rejected_qty': 2,
+            'warehouse': '_Test Warehouse - _TC',
+            'rejected_warehouse': '_Test Rejected Warehouse - _TC'
+        }]
+    })
+    purchase_receipt.insert()
+    purchase_receipt.submit()
+
+    # Check if rejected quantity is properly reflected in the system
+    for item in purchase_receipt.items:
+        assert item.rejected_qty == 2

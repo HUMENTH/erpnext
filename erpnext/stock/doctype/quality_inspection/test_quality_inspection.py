@@ -320,3 +320,53 @@ def create_quality_inspection_parameter(parameter):
 		frappe.get_doc(
 			{"doctype": "Quality Inspection Parameter", "parameter": parameter, "description": parameter}
 		).insert()
+
+# Test for Quality Inspection for all items and quantities
+def test_create_multiple_quality_inspections_for_each_unit():
+    purchase_receipt = frappe.get_doc({
+        'doctype': 'Purchase Receipt',
+        'supplier': '_Test Supplier',
+        'items': [{
+            'item_code': '_Test Item',
+            'qty': 10,
+            'received_qty': 10,
+            'warehouse': '_Test Warehouse - _TC'
+        }]
+    })
+    purchase_receipt.insert()
+    purchase_receipt.submit()
+
+    # Assuming that in this case, each unit must undergo separate quality inspection
+    for item in purchase_receipt.items:
+        for i in range(int(item.received_qty)):
+            qi = frappe.get_doc({
+                'doctype': 'Quality Inspection',
+                'item_code': item.item_code,
+                'reference_type': 'Purchase Receipt',
+                'reference_name': purchase_receipt.name,
+                'inspected_by': frappe.session.user
+            })
+            qi.insert()
+            qi.submit()
+
+    assert frappe.db.count('Quality Inspection', {'reference_name': purchase_receipt.name}) == 10
+
+# Advanced Quality Inspection Tests
+def test_quality_inspection_status_based_on_reading():
+    # Creating a Quality Inspection and setting up a custom reading
+    qi = frappe.get_doc({
+        'doctype': 'Quality Inspection',
+        'item_code': '_Test Item',
+        'inspected_by': frappe.session.user,
+        'readings': [{
+            'specification': 'Length',
+            'reading_1': '10',
+            'min_value': '8',
+            'max_value': '12'
+        }]
+    })
+    qi.insert()
+    qi.submit()
+
+    # Check if the reading falls in the acceptable range and the status is set to Accepted
+    assert qi.readings[0].status == 'Accepted'

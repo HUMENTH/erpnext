@@ -104,6 +104,7 @@ class Item(Document):
 		include_item_in_manufacturing: DF.Check
 		inspection_required_before_delivery: DF.Check
 		inspection_required_before_purchase: DF.Check
+		inspection_required_for_each_unit: DF.Check
 		is_customer_provided_item: DF.Check
 		is_fixed_asset: DF.Check
 		is_grouped_asset: DF.Check
