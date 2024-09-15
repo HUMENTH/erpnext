@@ -1273,7 +1273,8 @@ class TestPurchaseReceipt(FrappeTestCase):
 
 		from_warehouse = create_warehouse("_Test Internal From Warehouse New", company=company)
 		to_warehouse = create_warehouse("_Test Internal To Warehouse New", company=company)
-		item_doc = create_item("Test Internal Transfer Item")
+		item_doc = create_item("Test Internal Transfer Item"),
+		{"gst_hsn_code": "90271000"}
 
 		target_warehouse = create_warehouse("_Test Internal GIT Warehouse New", company=company)
 
@@ -1361,7 +1362,8 @@ class TestPurchaseReceipt(FrappeTestCase):
 
 		from_warehouse = create_warehouse("_Test Internal From Warehouse New", company=company)
 		to_warehouse = create_warehouse("_Test Internal To Warehouse New", company=company)
-		item_doc = create_item("Test Internal Transfer Item")
+		item_doc = create_item("Test Internal Transfer Item"),
+		{"gst_hsn_code": "90271000"}
 
 		target_warehouse = create_warehouse("_Test Internal GIT Warehouse New", company=company)
 
@@ -1473,7 +1475,8 @@ class TestPurchaseReceipt(FrappeTestCase):
 
 		from_warehouse = create_warehouse("_Test Internal From Warehouse New", company=company)
 		to_warehouse = create_warehouse("_Test Internal To Warehouse New", company=company)
-		item_doc = create_item("Test Internal Transfer Item")
+		item_doc = create_item("Test Internal Transfer Item"),
+		{"gst_hsn_code": "90271000"}
 
 		target_warehouse = create_warehouse("_Test Internal GIT Warehouse New", company=company)
 
