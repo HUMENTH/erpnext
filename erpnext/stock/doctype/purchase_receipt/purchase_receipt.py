@@ -237,7 +237,7 @@ class PurchaseReceipt(BuyingController):
 			self.set_status()
 
 		self.po_required()
-		self.validate_items_quality_inspection()
+#		self.validate_items_quality_inspection()
 		self.validate_with_previous_doc()
 		self.validate_uom_is_integer()
 		self.validate_cwip_accounts()
@@ -252,6 +252,11 @@ class PurchaseReceipt(BuyingController):
 		self.reset_default_field_value("set_warehouse", "items", "warehouse")
 		self.reset_default_field_value("rejected_warehouse", "items", "rejected_warehouse")
 		self.reset_default_field_value("set_from_warehouse", "items", "from_warehouse")
+	
+	def before_submit(self):
+    	# Run Quality Inspection checks strictly just before submission
+		self.validate_items_quality_inspection()
+		super().before_submit()
 
 	def validate_uom_is_integer(self):
 		super().validate_uom_is_integer("uom", ["qty", "received_qty"], "Purchase Receipt Item")
@@ -314,15 +319,37 @@ class PurchaseReceipt(BuyingController):
 				if not d.purchase_order:
 					frappe.throw(_("Purchase Order number required for Item {0}").format(d.item_code))
 
-	def validate_items_quality_inspection(self):
+	def validate_items_quality_inspection(self, draft=False):
 		for item in self.get("items"):
-			if item.quality_inspection:
+			# Check if inspection is required for each unit in the Item Master
+			inspection_required_for_each_unit = frappe.db.get_value(
+				"Item", item.item_code, "inspection_required_for_each_unit"
+			)
+
+			# If inspection is required for each unit, create separate Quality Inspections for each received_qty
+			if inspection_required_for_each_unit and item.received_qty:
+				 if not draft:
+					# Create Quality Inspections only when not in draft
+						for i in range(int(item.received_qty)):
+							quality_inspection = frappe.new_doc("Quality Inspection")
+							quality_inspection.item_code = item.item_code
+							quality_inspection.reference_type = "Purchase Receipt"
+							quality_inspection.reference_name = self.name
+							quality_inspection.inspection_type = "Incoming"
+							quality_inspection.sample_size = 1  # Since each unit is inspected separately
+							quality_inspection.flags.ignore_permissions = True
+							quality_inspection.insert()
+
+						# Update item to reflect the multiple inspections created
+						item.quality_inspection = None  # Clear the field as separate inspections are created
+
+			elif item.quality_inspection:
 				qi = frappe.db.get_value(
 					"Quality Inspection",
 					item.quality_inspection,
 					["reference_type", "reference_name", "item_code"],
 					as_dict=True,
-				)
+			)
 
 				if qi.reference_type != self.doctype or qi.reference_name != self.name:
 					msg = f"""Row #{item.idx}: Please select a valid Quality Inspection with Reference Type

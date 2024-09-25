@@ -60,6 +60,7 @@
     "received_qty": 5.0,
     "rejected_qty": 0.0,
     "stock_uom": "_Test UOM",
+    "gst_hsn_code": "90271000",
     "uom": "_Test UOM",
     "warehouse": "_Test Warehouse - _TC",
 	"cost_center": "Main - _TC"
@@ -77,6 +78,7 @@
     "received_qty": 5.0,
     "rejected_qty": 0.0,
     "stock_uom": "_Test UOM",
+    "gst_hsn_code": "90271000",
     "uom": "_Test UOM",
     "warehouse": "_Test Warehouse 1 - _TC",
 	"cost_center": "Main - _TC"
